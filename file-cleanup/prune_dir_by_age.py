@@ -7,6 +7,12 @@ import re
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Protocol
+
+
+class _CsvWriter(Protocol):  # pylint: disable=too-few-public-methods
+    def writerow(self, row: list[Any]) -> Any:
+        """Write one row to the CSV output."""
 
 
 def parse_args() -> argparse.Namespace:
@@ -80,9 +86,9 @@ def make_log_path(
     return log_dir / f"cleanup-{sanitized}_{timestamp}.csv"
 
 
-def compile_patterns(regexes: list[str]) -> list[re.Pattern]:
+def compile_patterns(regexes: list[str]) -> list[re.Pattern[str]]:
     """Compile regex strings; warn and skip invalid patterns."""
-    compiled: list[re.Pattern] = []
+    compiled: list[re.Pattern[str]] = []
     for pattern in regexes:
         try:
             compiled.append(re.compile(pattern))
@@ -94,13 +100,13 @@ def compile_patterns(regexes: list[str]) -> list[re.Pattern]:
     return compiled
 
 
-def matches_any(name: str, patterns: list[re.Pattern]) -> bool:
+def matches_any(name: str, patterns: list[re.Pattern[str]]) -> bool:
     """Return True if name matches at least one compiled pattern."""
     return any(p.search(name) for p in patterns)
 
 
 def write_csv_row(
-    writer: csv.writer,
+    writer: _CsvWriter,
     date: str,
     file_path: Path,
     last_write_time: str,
@@ -114,10 +120,10 @@ def write_csv_row(
 def prune_files(
     target: Path,
     cutoff: datetime,
-    patterns: list[re.Pattern],
+    patterns: list[re.Pattern[str]],
     log_path: Path,
     dry_run: bool,
-    writer: csv.writer,
+    writer: _CsvWriter,
 ) -> None:
     """Delete (or dry-run) files older than cutoff; log each action."""
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -159,7 +165,7 @@ def prune_files(
 def prune_empty_dirs(
     target: Path,
     dry_run: bool,
-    writer: csv.writer,
+    writer: _CsvWriter,
 ) -> None:
     """Remove empty subdirectories deepest-first; log each action."""
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
