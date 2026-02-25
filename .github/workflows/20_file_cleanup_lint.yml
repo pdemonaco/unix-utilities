@@ -1,0 +1,33 @@
+name: 20 - file-cleanup lint
+
+on:
+  pull_request:
+    paths:
+      - '*.py'
+      - 'mypy.ini'
+      - '.pylintrc'
+      - '.flake8'
+      - '.github/workflows/20_file_cleanup_lint.yml'
+
+jobs:
+  lint:
+    name: flake8 / pylint / mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linters
+        run: pip install flake8 pylint mypy
+
+      - name: flake8
+        run: flake8 file-cleanup/prune_dir_by_age.py
+
+      - name: pylint
+        run: pylint file-cleanup/prune_dir_by_age.py
+
+      - name: mypy
+        run: mypy file-cleanup/prune_dir_by_age.py
